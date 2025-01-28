@@ -3,6 +3,6 @@ This tool takes an image and automatically generates a pixelated Mystery Mosaic 
 
 ![alt text](https://github.com/ashmystic/color-by-number-generator/blob/master/images/instructions_banner.png?raw=true)
 
-## View the live tool at ![view live](https://init-adarsh.github.io/color-by-number-generator)
+## View the live tool at [view live](https://init-adarsh.github.io/color-by-number-generator)
 ### If you enjoyed using this tool please consider making a donation!
 [<img src="https://github.com/ashmystic/color-by-number-generator/blob/master/images/venmo_logo.png?raw=true">](https://venmo.com/Ash_Mystic)

@@ -1,619 +1,430 @@
 var app;
 
 window.onload = function() {
-
-	app = new Color_By_Number_App();
-	app.initialize();
-	app.redraw();
-
+    app = new Color_By_Number_App();
+    app.initialize();
+    app.redraw();
 };
 
 window.onresize = function() {
-	app.redraw();
-}
-/*
-	Constructor
-*/
-function Color_By_Number_App () {
+    app.redraw();
+};
 
-	/*
-		Data
-	*/
-	this.DEBUG = false;
-
-	this.inputContext = document.getElementById("inputCanvas").getContext("2d");
-	this.previewContext = document.getElementById("outputCanvas").getContext("2d");
-	this.colorSwatchContext = document.getElementById("colorSwatchCanvas").getContext("2d");
-
-	this.inputFileName = "";
-	this.image = document.getElementById("image");
-
-	this.drawingWidth = 0;
-	this.drawingHeight = 0;
-
-	this.numberCells = 40;
-	this.numberCellsX = 0;
-	this.numberCellsY = 0;
-	this.cellLength = 0;
-
-	this.numberColors = 7;
-
-	this.uniqueColorsArray = null;
-
-	this.colorTolerance = 1;
-
-	this.previewModeColor = true;
-
-	/*
-		UI
-	*/
-	this.inputFileUpload = document.getElementById("inputFileUpload");
-	this.imagePreviews = document.getElementsByClassName("imagePreview");
-
-
-	// Slider to control number of cells
-	this.inputFieldNumberCells = $("#inputFieldNumberCells");
-	this.sliderNumberCells = $("#sliderNumberCells");
-	this.numberCellsMin = 10;
-	this.numberCellsMax = 80;
-	this.numberCellsStep = 5;
-
-	// Slider to control number of colors
-	this.inputFieldNumberColors = $("#inputFieldNumberColors");
-	this.sliderNumberColors = $("#sliderNumberColors");
-	this.numberColorsMin = 2;
-	this.numberColorsMax = 9;
-	this.numberColorsStep = 1;
-
-	// Slider to control color tolerance
-	this.inputFieldColorTolerance = $("#inputFieldColorTolerance");
-	this.sliderColorTolerance = $("#sliderColorTolerance");
-	this.colorToleranceMin = 1;
-	this.colorToleranceMax = 10;
-	this.colorToleranceStep = 1;
-	this.colorToleranceUIRatio = 50000;
-
-	// Checkbox to toggle preview color
-	this.checkboxPreviewMode = document.getElementById("checkboxPreviewMode");
-
-	// Buttons to export image
-	this.inputButtonSaveImage = $("#inputButtonSaveImage");
-	this.inputButtonGeneratePDF = $("#inputButtonGeneratePDF");
-
-	this.initGUI();
+function Color_By_Number_App() {
+    this.DEBUG = false;
+    this.inputContext = document.getElementById("inputCanvas").getContext("2d");
+    this.previewContext = document.getElementById("outputCanvas").getContext("2d");
+    this.colorSwatchContext = document.getElementById("colorSwatchCanvas").getContext("2d");
+    this.inputFileName = "";
+    this.image = document.getElementById("image");
+    this.drawingWidth = 0;
+    this.drawingHeight = 0;
+    this.numberCells = 40;
+    this.numberCellsX = 0;
+    this.numberCellsY = 0;
+    this.cellLength = 0;
+    this.numberColors = 7;
+    this.uniqueColorsArray = null;
+    this.colorTolerance = 1;
+    this.previewModeColor = true;
+    this.inputFileUpload = document.getElementById("inputFileUpload");
+    this.imagePreviews = document.getElementsByClassName("imagePreview");
+    this.inputFieldNumberCells = $("#inputFieldNumberCells");
+    this.sliderNumberCells = $("#sliderNumberCells");
+    this.numberCellsMin = 10;
+    this.numberCellsMax = 80;
+    this.numberCellsStep = 5;
+    this.inputFieldNumberColors = $("#inputFieldNumberColors");
+    this.sliderNumberColors = $("#sliderNumberColors");
+    this.numberColorsMin = 2;
+    this.numberColorsMax = 11; // Maximum number of colors is 11
+    this.numberColorsStep = 1;
+    this.inputFieldColorTolerance = $("#inputFieldColorTolerance");
+    this.sliderColorTolerance = $("#sliderColorTolerance");
+    this.colorToleranceMin = 1;
+    this.colorToleranceMax = 10;
+    this.colorToleranceStep = 1;
+    this.colorToleranceUIRatio = 50000;
+    this.checkboxPreviewMode = document.getElementById("checkboxPreviewMode");
+    this.inputButtonSaveImage = $("#inputButtonSaveImage");
+    this.inputButtonGeneratePDF = $("#inputButtonGeneratePDF");
+    this.initGUI();
 }
 
 Color_By_Number_App.prototype = {
+    constructor: Color_By_Number_App,
 
-	constructor: Color_By_Number_App,
-
-	initialize: function() {
-		this.log('initialize');
-
-		this.uniqueColorsArray = new Array();
-	},
-
-	initGUI: function() {
-
-		var app = this;
-		
-		/*
-			UI to upload file
-		*/
-		this.inputFileUpload.addEventListener('change', function(event) {
-	        if(event.target.files[0]) {
-			    var app = this;
-
-				app.initialize();
-				app.inputFileName = event.target.files[0].name.substr(0, event.target.files[0].name.indexOf("."));
-			    var url = URL.createObjectURL(event.target.files[0]);
-			    app.image = new Image();
-			    app.image.onload = function() {
-			    	Array.prototype.forEach.call(app.imagePreviews, function(el) {
-			 		   	el.style.display = "block";
-					});
-			    	app.loadImage(app.image, app.inputContext);
-			    	app.redraw();
-			    }
-		    	app.image.src = url;
-		    }
-	    }.bind(this), false);
-
-		/*
-			UI to control number of cells
-		*/
-		this.sliderNumberCells.slider({
-			range: "min",
-			min: this.numberCellsMin,
-			max: this.numberCellsMax,
-			value: this.numberCells,
-			step: this.numberCellsStep,
-			slide: function( event, ui ) {
-				app.numberCells = ui.value;
-				app.inputFieldNumberCells.val(app.numberCells);
-				app.redraw();
-		  }
-		});
-
-		this.inputFieldNumberCells.attr('min', this.numberCellsMin);
-		this.inputFieldNumberCells.attr('max', this.numberCellsMax);
-		this.inputFieldNumberCells.attr('step', this.numberCellsStep);
-		this.inputFieldNumberCells.val(this.numberCells);
-		this.inputFieldNumberCells.change(function () {
-			app.numberCells = this.value;
-			app.sliderNumberCells.slider("value", app.numberCells);
-			app.redraw();
-		});
-
-		/*
-			UI to control number of colors
-		*/
-		this.sliderNumberColors.slider({
-			range: "min",
-			min: this.numberColorsMin,
-			max: this.numberColorsMax,
-			value: this.numberColors,
-			step: this.numberColorsStep,
-			slide: function( event, ui ) {
-				app.numberColors = ui.value;
-				app.inputFieldNumberColors.val(app.numberColors);
-				app.redraw();
-		  }
-		});
-
-		this.inputFieldNumberColors.attr('min', this.numberColorsMin);
-		this.inputFieldNumberColors.attr('max', this.numberColorsMax);
-		this.inputFieldNumberColors.attr('step', this.numberColorsStep);
-		this.inputFieldNumberColors.val(this.numberColors);
-		this.inputFieldNumberColors.change(function () {
-			app.numberColors = this.value;
-			app.sliderNumberColors.slider("value", app.numberColors);
-			app.redraw();
-		});
-
-		/*
-			UI to control color tolerance
-		*/
-		this.sliderColorTolerance.slider({
-			range: "min",
-			min: this.colorToleranceMin,
-			max: this.colorToleranceMax,
-			value: Math.ceil(this.colorTolerance),
-			step: this.colorToleranceStep,
-			slide: function( event, ui ) {
-				app.inputFieldColorTolerance.val(ui.value);
-				app.colorTolerance = ui.value;
-				app.log(app.colorTolerance, app.toHexColor(app.colorTolerance, false));
-				app.redraw();
-		  }
-		});
-
-		this.inputFieldColorTolerance.attr('min', this.ColorToleranceMin);
-		this.inputFieldColorTolerance.attr('max', this.ColorToleranceMax);
-		this.inputFieldColorTolerance.attr('step', this.colorToleranceStep);
-		this.inputFieldColorTolerance.val(Math.ceil(this.colorTolerance));
-		this.inputFieldColorTolerance.change(function () {
-			app.sliderColorTolerance.slider("value", this.value);
-			app.colorTolerance = this.value;
-			app.redraw();
-		});
-
-		/*
-			UI to toggle color
-		*/
-		this.checkboxPreviewMode.checked = this.previewModeColor;
-		this.checkboxPreviewMode.addEventListener('click', function(event) {
-			app.setPreviewMode(event.target.checked);
-	    } );
-
-		const fileName = "color-by-number_"+app.inputFileName+"_s"+app.numberCells+"_n"+app.numberColors+"_c"+app.colorTolerance;
-		/*
-			UI to save image
-		*/
-		this.inputButtonSaveImage.button();
-		this.inputButtonSaveImage.click( function( event ) {
-	      	app.setPreviewMode(true, 1000);
-			const image = app.previewContext.canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
-			window.location.href=image;
-
-			// Revert size
-			app.setPreviewMode(true);
-	    } );
-
-	    this.inputButtonGeneratePDF.button();
-		this.inputButtonGeneratePDF.click( function( event ) {
-			if(app.uniqueColorsArray.length > 0) {
-				app.generatePDF(app.previewContext, app.colorSwatchContext, fileName+".pdf");
-			} else {
-				alert('Upload an image file first!');
-			}
-	    });
-	},
-
-	setPreviewMode: function(modeColor, width) {
-		this.log('previewModeColor',modeColor);
-		this.previewModeColor = modeColor;
-		this.checkboxPreviewMode.checked = this.previewModeColor;
-		this.redraw(width);
-	},
-
-	setDrawingWidth: function(width) {
-		if(width) {
-			this.drawingWidth = width;
-		} else if(window.innerWidth > 720) {
-			this.drawingWidth = window.innerWidth-450;
-		} else {
-			this.drawingWidth = window.innerWidth-120;
-		}
-	},
-
-	/*
-		Scale and draw input image
-	*/	
-	loadImage: function(image, context) {
-		var aspectRatio = image.width / image.height;
-
-	  	context.canvas.width = image.width = 100;
-	  	context.canvas.height = image.height = context.canvas.width / aspectRatio;
-	  	this.log('InputDimensions', context.canvas.width + ', ' + context.canvas.height);
-	  	context.drawImage(image, 0, 0, context.canvas.width, context.canvas.height);
-	},
-
-	pdfPrintFooter: function(pdf, x, y) {
-		pdf.setFontSize(14);
-		pdf.setFont('Times');
-		pdf.setTextColor('#434343');
-		pdf.text('Created by ~ ashmystic.com/color-by-number-generator', x, y);
-	},
-
-	generatePDF: function(previewContext, colorSwatchContext, fileNameString) {
-
-		const margin = 20;
-		const colorSwatchHeight = 50;
-
-		const colorSwatchAspectRatio = colorSwatchContext.canvas.width / colorSwatchContext.canvas.height;
-		const imgAspectRatio = previewContext.canvas.width / previewContext.canvas.height;
-
-		const orientationPortrait = imgAspectRatio <= 1;
-
-		// A4 dimensions: 595 x 842 pt = 8.27 × 11.69 inch @ 72 DPI
-		const docWidth = (orientationPortrait ? 595 : 842);
-		const docHeight = (orientationPortrait ? 842 : 595);
-
-		const docAspectRatio = docWidth / docHeight;
-
-		var imgWidth, imgHeight;
-		if(imgAspectRatio > docAspectRatio) {
-			imgWidth = docWidth - 2*margin;
-			imgHeight = imgWidth / imgAspectRatio;
-		} else {
-			imgHeight = docHeight - 2.0*margin - colorSwatchHeight;
-			imgWidth = imgHeight * imgAspectRatio;
-		}
-
-		var pdf = new jsPDF({
-			unit: 'pt',
-			orientation: (orientationPortrait ? 'portrait' : 'landscape')
-		})
-		/*
-			Page 1
-		*/
-		// Print number grid
-		this.setPreviewMode(false, 1000);
-		const previewGridData = previewContext.canvas.toDataURL("image/jpeg", 1.0);
-		pdf.addImage(previewGridData, 'JPEG', margin, margin, imgWidth, imgHeight);
-
-		// Print color swatch key
-		const colorSwatchData = colorSwatchContext.canvas.toDataURL("image/jpeg", 1.0);
-		pdf.addImage(colorSwatchData, 'JPEG', margin, margin+imgHeight+1);
-
-		// Print footer text
-		this.pdfPrintFooter(pdf, margin, docHeight - margin/3);
-
-		/*
-			Page 2
-		*/
-		// Print preview
-		pdf.addPage();
-		pdf.setPage(2);
-		this.setPreviewMode(true, 1000);
-		const previewColorData = previewContext.canvas.toDataURL("image/jpeg", 1.0);
-		pdf.addImage(previewColorData, 'JPEG', margin, margin, 300, 300 / imgAspectRatio);
-
-		// Print footer text
-		this.pdfPrintFooter(pdf, margin, docHeight - margin/2);
-
-		pdf.save(fileNameString);
-
-		// Revert size
-		this.setPreviewMode(true);
-	},
-
-	redraw: function(width) {
-		this.log('redraw');
-		this.setDrawingWidth(width);
-		this.uniqueColorsArray = new Array();
-
-
-		if(this.image.src) {
-			this.log('found image');
-			var aspectRatio = this.image.width / this.image.height;
-
-		  	if(aspectRatio > 1) {
-		  		this.numberCellsY = this.numberCells;
-		  		this.numberCellsX = Math.ceil(this.numberCellsY * aspectRatio);
-		  	} else {
-		  		this.numberCellsX = this.numberCells;
-		  		this.numberCellsY = Math.ceil(this.numberCellsX / aspectRatio);
-		  	}
-
-		  	this.cellLength = Math.floor(this.drawingWidth / this.numberCellsX);
-
-		  	this.previewContext.canvas.width = this.cellLength * this.numberCellsX;
-		  	this.previewContext.canvas.height = this.cellLength * this.numberCellsY;
-
-		  	this.log('NumberCells', this.numberCellsX + ', ' + this.numberCellsY);
-			this.drawImage(this.image, this.inputContext, this.previewContext, this.previewModeColor);
-
-
-			this.drawColorSwatches(this.colorSwatchContext, this.uniqueColorsArray);
-		}
-	},
-
-	drawImage: function(image, inputContext, previewContext, previewModeColor) {
-		this.log('drawImage');
-
-	  	/*
-	  		Generate and draw output image
-	  	*/
-	  	var data = this.getImageData(image, inputContext, true);
-	  	var initialFrequencyMap = data[0];
-	  	var grid = data[1];
-
-	  	var initialFrequencyMapSorted = new Map([...initialFrequencyMap.entries()].sort());
-
-	  	var data = this.getMaps(initialFrequencyMapSorted, this.numberColors);
-	  	var frequencyMap = data[0];
-	  	var toleranceMap = data[1];
-
-	  	previewContext.clearRect(0, 0, previewContext.canvas.width, previewContext.canvas.height);
-		previewContext.fillStyle = '#EDEDED';
-		previewContext.fillRect(0, 0, previewContext.canvas.width, previewContext.canvas.height);
-	  	for(var x = 0; x < this.numberCellsX ; x++) {
-	  		for(var y = 0; y < this.numberCellsY ; y++) {
-
-	  			grid[x][y] = frequencyMap.get(toleranceMap.get(grid[x][y]));
-
-	  			if(previewModeColor) {
-	  				previewContext.fillStyle = '#'+grid[x][y];
-		  			previewContext.fillRect(x*this.cellLength, y*this.cellLength, this.cellLength, this.cellLength);
-	  			} else {
-	  				previewContext.fillStyle = '#FFFFFF';
-		  			previewContext.fillRect(x*this.cellLength, y*this.cellLength, this.cellLength, this.cellLength);
-		  			
-	  				previewContext.strokeStyle = '#000000';
-	  				previewContext.strokeRect(x*this.cellLength, y*this.cellLength, this.cellLength, this.cellLength);
-
-		  			var number = this.getColorNumber(grid[x][y], this.uniqueColorsArray);
-		  			const fontSize = this.cellLength / 1.5;
-		  			previewContext.font = fontSize+"px Arial";
-		  			previewContext.fillStyle = '#434343';
-					previewContext.fillText(number, x*this.cellLength+this.cellLength/2-previewContext.measureText(number).width/2, y*this.cellLength+2*this.cellLength/3);
-		  		}
-	  		}
-	  	}
-	},
-
-	drawColorSwatches: function(context, colorsArray) {
-		this.log('colorsArray', colorsArray);
-
-		context.canvas.width = this.previewContext.canvas.width;
-		context.canvas.height = context.canvas.width/5;
-
-		const maxSwatchRadius = 20;
-		const swatchRadius = Math.min(maxSwatchRadius, (context.canvas.width / colorsArray.length) * (2/5));
-		const yPos = swatchRadius*1.5;
-
-		context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-		context.fillStyle = '#FFFFFF';
-		context.fillRect(0, 0, context.canvas.width, context.canvas.height);
-
-		for(var x = 0; x < colorsArray.length; x++) {
-			const xPos = swatchRadius* (4/3) + x*(5/2)*swatchRadius;
-			context.beginPath();
-			context.arc(xPos, yPos, swatchRadius, 0, 2 * Math.PI);
-			context.fillStyle = '#'+colorsArray[x];
-			context.fill();
-			context.strokeStyle = "#5e5e5e"
-			context.stroke();
-			context.closePath();
-
-			var number = this.getColorNumber(colorsArray[x], colorsArray);
-  			const fontSize = swatchRadius;
-  			context.font = fontSize+"px Arial";
-  			context.fillStyle = '#434343';
-			context.fillText(number, xPos - context.measureText(number).width/2, swatchRadius*3.5);
-		}
-	},
-
-	getImageData: function(image, inputContext, getHues) {
-		var frequencyMap = new Map();
-
-		var grid = [];
-		var xStep = inputContext.canvas.width / this.numberCellsX;
-		var yStep = inputContext.canvas.height / this.numberCellsY;
-	  	for(var x = 0; x < this.numberCellsX; x++) {
-	  		grid.push(new Array());
-	  		for(var y = 0; y < this.numberCellsY; y++) {
-	  			var imageData = inputContext.getImageData(x*xStep, y*yStep, 1, 1);
-
-	  			var dataHex = this.rgbToHex(imageData.data, false);
-
-	  			grid[x].push(dataHex);
-	  			var count = frequencyMap.get(dataHex);
-	  			if(count) {
-	  				count++;
-	  			} else {
-	  				count = 1;
-	  			}
-	  			frequencyMap.set(dataHex, count);
-	  		}
-	  	}
-	  	this.log('frequencyMap', frequencyMap);
-	  	this.log('grid', grid);
-	  	return [frequencyMap, grid];
-	},
-
-	getToleranceMap: function(mapArr, tolerance) {
-		
-		var toleranceMap = new Map();
-		var toleranceFrequencyMapArray = [];
-		var i = 0;
-
-		this.log('mapArr',mapArr);
-		this.log('mapArr.length',mapArr.length);
-
-		while(i < mapArr.length) {
-			var entry = mapArr[i];
-			toleranceMap.set(entry[0], entry[0]);
-
-			if(i < mapArr.length - 1) {
-				var nextEntry = mapArr[i+1];
-
-				var color1 = '0x'+nextEntry[0];
-				var color2 = '0x'+entry[0];
-							while((i < mapArr.length - 1) && (Math.abs('0x'+(color1-color2).toString(16)) < this.colorTolerance*this.colorToleranceUIRatio)) {
-				entry = [entry[0], entry[1]+nextEntry[1]];
-					toleranceMap.set(nextEntry[0], entry[0]);
-					i++;
-					if(i < mapArr.length - 1) {
-						nextEntry = mapArr[i+1];
-						color1 = '0x'+nextEntry[0];
-						color2 = '0x'+entry[0];
-					}
-				}
-			}
-			toleranceFrequencyMapArray.push(entry);
-			i++;
-		}
-		this.log('toleranceMap',toleranceMap)
-		this.log('toleranceFrequencyMapArray',toleranceFrequencyMapArray);
-		return [toleranceMap, toleranceFrequencyMapArray];
-	},
-
-	getMaps: function(map, numberColors) {
-		
-		var data = this.getToleranceMap(Array.from(map));
-		var toleranceMap = data[0];
-		var toleranceFrequencyMapArray = data[1];
-
-		var step = Math.floor(toleranceFrequencyMapArray.length / numberColors);
-		this.log('toleranceFrequencyMapArray.length',toleranceFrequencyMapArray.length);
-		this.log('step',step);
-		var frequencyMap = new Map();
-
-		/*
-			Get map of values
-		*/
-		for(var x = 0; x < toleranceFrequencyMapArray.length - 1; x+= step) {
-
-			var highestFrequency = toleranceFrequencyMapArray[x];
-
-			for(var i = 1; i < step; i++) {
-				if(toleranceFrequencyMapArray[x+i] && toleranceFrequencyMapArray[x+i][1] > highestFrequency[1]) {
-					highestFrequency = toleranceFrequencyMapArray[x+i];
-				}
-			}
-			this.log('highestFrequency',highestFrequency);
-			this.uniqueColorsArray.push(highestFrequency[0]);
-			for(var i2 = 0; i2 < step; i2++) {
-				if(toleranceFrequencyMapArray[x+i2]) {
-					frequencyMap.set(toleranceFrequencyMapArray[x+i2][0], highestFrequency[0]);
-				}
-			}
-		}
-		this.log('frequencyMap', frequencyMap);
-		this.log('toleranceMap', toleranceMap);
-		return [frequencyMap, toleranceMap];
-	},
-
-	getColorNumber: function(color, uniqueColorsArray) {
-		return uniqueColorsArray.indexOf(color)+1;
-	},
-
-	log: function(title, data) {
-		if(this.DEBUG) {	
-			console.log(title + ': ');
-
-			if(data)
-				console.log(data);
-		}
-	},
-
-	addAndSort: function(array, value) {
-	    array.push(value);
-	    i = array.length - 1;
-	    item = array[i];
-	    while (i > 0 && item < array[i-1]) {
-	        array[i] = array[i-1];
-	        i -= 1;
-	    }
-	    array[i] = item;
-	    return array;
-	},
-
-	toHexColor: function ( d, hashTag ) {
-       var c = Number(d).toString(16);
-       return hashTag ? '#':'' + ( "000000".substr( 0, 6 - c.length ) + c );
+    initialize: function() {
+        this.uniqueColorsArray = [];
     },
 
-    componentToHex: function (c) {
-	    var hex = Number(c).toString(16);
-	    return hex.length == 1 ? "0" + hex : hex;
-	},
- 	rgbToHex: function (rgbArr, hashTag) {
- 		var r = rgbArr[0];
-	    var g = rgbArr[1];
-	    var b = rgbArr[2];
-	    return hashTag ? '#':'' + this.componentToHex(r) + this.componentToHex(g) + this.componentToHex(b);
-	},
+    initGUI: function() {
+        var app = this;
+        this.inputFileUpload.addEventListener('change', function(event) {
+            if(event.target.files[0]) {
+                app.initialize();
+                app.inputFileName = event.target.files[0].name.substr(0, event.target.files[0].name.indexOf("."));
+                var url = URL.createObjectURL(event.target.files[0]);
+                app.image = new Image();
+                app.image.onload = function() {
+                    Array.prototype.forEach.call(app.imagePreviews, function(el) {
+                        el.style.display = "block";
+                    });
+                    app.loadImage(app.image, app.inputContext);
+                    app.redraw();
+                }
+                app.image.src = url;
+            }
+        }.bind(this), false);
 
-	rgbToHsl: function(rgbArr){
-	    var r1 = rgbArr[0] / 255;
-	    var g1 = rgbArr[1] / 255;
-	    var b1 = rgbArr[2] / 255;
-	 
-	    var maxColor = Math.max(r1,g1,b1);
-	    var minColor = Math.min(r1,g1,b1);
-	    //Calculate L:
-	    var L = (maxColor + minColor) / 2 ;
-	    var S = 0;
-	    var H = 0;
-	    if(maxColor != minColor){
-	        //Calculate S:
-	        if(L < 0.5){
-	            S = (maxColor - minColor) / (maxColor + minColor);
-	        }else{
-	            S = (maxColor - minColor) / (2.0 - maxColor - minColor);
-	        }
-	        //Calculate H:
-	        if(r1 == maxColor){
-	            H = (g1-b1) / (maxColor - minColor);
-	        }else if(g1 == maxColor){
-	            H = 2.0 + (b1 - r1) / (maxColor - minColor);
-	        }else{
-	            H = 4.0 + (r1 - g1) / (maxColor - minColor);
-	        }
-	    }
-	 
-	    L = L * 100;
-	    S = S * 100;
-	    H = H * 60;
-	    if(H<0){
-	        H += 360;
-	    }
-	    var result = [H, S, L];
-	    return result;
-	}
+        this.sliderNumberCells.slider({
+            range: "min",
+            min: this.numberCellsMin,
+            max: this.numberCellsMax,
+            value: this.numberCells,
+            step: this.numberCellsStep,
+            slide: function(event, ui) {
+                app.numberCells = ui.value;
+                app.inputFieldNumberCells.val(app.numberCells);
+                app.redraw();
+            }
+        });
 
-}
+        this.inputFieldNumberCells.val(this.numberCells);
+        this.inputFieldNumberCells.change(function() {
+            app.numberCells = this.value;
+            app.sliderNumberCells.slider("value", app.numberCells);
+            app.redraw();
+        });
+
+        this.sliderNumberColors.slider({
+            range: "min",
+            min: this.numberColorsMin,
+            max: this.numberColorsMax,
+            value: this.numberColors,
+            step: this.numberColorsStep,
+            slide: function(event, ui) {
+                app.numberColors = ui.value;
+                app.inputFieldNumberColors.val(app.numberColors);
+                app.redraw();
+            }
+        });
+
+        this.inputFieldNumberColors.val(this.numberColors);
+        this.inputFieldNumberColors.change(function() {
+            app.numberColors = this.value;
+            app.sliderNumberColors.slider("value", app.numberColors);
+            app.redraw();
+        });
+
+        this.sliderColorTolerance.slider({
+            range: "min",
+            min: this.colorToleranceMin,
+            max: this.colorToleranceMax,
+            value: Math.ceil(this.colorTolerance),
+            step: this.colorToleranceStep,
+            slide: function(event, ui) {
+                app.inputFieldColorTolerance.val(ui.value);
+                app.colorTolerance = ui.value;
+                app.redraw();
+            }
+        });
+
+        this.inputFieldColorTolerance.val(Math.ceil(this.colorTolerance));
+        this.inputFieldColorTolerance.change(function() {
+            app.sliderColorTolerance.slider("value", this.value);
+            app.colorTolerance = this.value;
+            app.redraw();
+        });
+
+        this.checkboxPreviewMode.checked = this.previewModeColor;
+        this.checkboxPreviewMode.addEventListener('click', function(event) {
+            app.setPreviewMode(event.target.checked);
+        });
+
+        this.inputButtonSaveImage.click(function(event) {
+            if(app.uniqueColorsArray.length > 0) {
+                app.saveImage();
+            } else {
+                alert('Upload an image file first!');
+            }
+        });
+
+        this.inputButtonGeneratePDF.click(function(event) {
+            if(app.uniqueColorsArray.length > 0) {
+                const fileName = "color-by-number_" + app.inputFileName + ".pdf";
+                app.generatePDF(app.previewContext, app.colorSwatchContext, fileName);
+            } else {
+                alert('Upload an image file first!');
+            }
+        });
+    },
+
+    setPreviewMode: function(modeColor, width) {
+        this.previewModeColor = modeColor;
+        this.checkboxPreviewMode.checked = this.previewModeColor;
+        this.redraw(width);
+    },
+
+    setDrawingWidth: function(width) {
+        this.drawingWidth = width || (window.innerWidth > 720 ? window.innerWidth - 450 : window.innerWidth - 120);
+    },
+
+    loadImage: function(image, context) {
+        var aspectRatio = image.width / image.height;
+        context.canvas.width = image.width = 100;
+        context.canvas.height = image.height = context.canvas.width / aspectRatio;
+        context.drawImage(image, 0, 0, context.canvas.width, context.canvas.height);
+    },
+
+    redraw: function(width) {
+        this.setDrawingWidth(width);
+        this.uniqueColorsArray = [];
+        if(this.image.src) {
+            var aspectRatio = this.image.width / this.image.height;
+            this.numberCellsY = aspectRatio > 1 ? this.numberCells : Math.ceil(this.numberCells / aspectRatio);
+            this.numberCellsX = aspectRatio > 1 ? Math.ceil(this.numberCells * aspectRatio) : this.numberCells;
+            this.cellLength = Math.floor(this.drawingWidth / this.numberCellsX);
+            this.previewContext.canvas.width = this.cellLength * this.numberCellsX;
+            this.previewContext.canvas.height = this.cellLength * this.numberCellsY;
+            this.drawImage(this.image, this.inputContext, this.previewContext, this.previewModeColor);
+            this.drawColorSwatches(this.colorSwatchContext, this.uniqueColorsArray);
+        }
+    },
+
+    drawImage: function(image, inputContext, previewContext, previewModeColor) {
+        var data = this.getImageData(image, inputContext);
+        var grid = data[1];
+        var frequencyMap = this.getMaps(data[0], this.numberColors)[0];
+        
+        previewContext.clearRect(0, 0, previewContext.canvas.width, previewContext.canvas.height);
+        previewContext.fillStyle = '#EDEDED';
+        previewContext.fillRect(0, 0, previewContext.canvas.width, previewContext.canvas.height);
+        
+        for(var x = 0; x < this.numberCellsX; x++) {
+            for(var y = 0; y < this.numberCellsY; y++) {
+                var color = frequencyMap.get(grid[x][y]);
+                if(previewModeColor) {
+                    previewContext.fillStyle = '#' + color;
+                    previewContext.fillRect(x * this.cellLength, y * this.cellLength, this.cellLength, this.cellLength);
+                } else {
+                    previewContext.fillStyle = '#FFFFFF';
+                    previewContext.fillRect(x * this.cellLength, y * this.cellLength, this.cellLength, this.cellLength);
+                    previewContext.strokeStyle = '#000000';
+                    previewContext.strokeRect(x * this.cellLength, y * this.cellLength, this.cellLength, this.cellLength);
+                    var number = this.uniqueColorsArray.indexOf(color) + 1;
+                    const fontSize = this.cellLength / 1.5;
+                    previewContext.font = fontSize + "px Arial";
+                    previewContext.fillStyle = '#434343';
+                    previewContext.fillText(number, x * this.cellLength + this.cellLength / 2 - previewContext.measureText(number).width / 2, y * this.cellLength + 2 * this.cellLength / 3);
+                }
+            }
+        }
+    },
+
+    getImageData: function(image, inputContext) {
+        var frequencyMap = new Map();
+        var grid = [];
+        var xStep = inputContext.canvas.width / this.numberCellsX;
+        var yStep = inputContext.canvas.height / this.numberCellsY;
+
+        for(var x = 0; x < this.numberCellsX; x++) {
+            grid.push([]);
+            for(var y = 0; y < this.numberCellsY; y++) {
+                var samples = 3;
+                var dx = xStep / samples;
+                var dy = yStep / samples;
+                var total = [0, 0, 0];
+
+                for(var i = 0; i < samples; i++) {
+                    for(var j = 0; j < samples; j++) {
+                        var data = inputContext.getImageData(x * xStep + i * dx, y * yStep + j * dy, 1, 1).data;
+                        total[0] += data[0];
+                        total[1] += data[1];
+                        total[2] += data[2];
+                    }
+                }
+
+                var avgColor = total.map(v => Math.round(v / (samples * samples)));
+                var hex = this.rgbToHex(avgColor, false);
+                grid[x][y] = hex;
+                frequencyMap.set(hex, (frequencyMap.get(hex) || 0) + 1);
+            }
+        }
+
+        var sortedEntries = Array.from(frequencyMap.entries()).sort((a, b) => 
+            this.getLuminance(a[0]) - this.getLuminance(b[0])
+        );
+        return [new Map(sortedEntries), grid];
+    },
+
+    getMaps: function(initialMap, maxColors) {
+        var merged = new Map();
+        var colors = Array.from(initialMap.entries());
+        
+        while(colors.length > 0) {
+            var current = colors.shift();
+            var group = [current];
+            
+            for(var i = colors.length - 1; i >= 0; i--) {
+                if(this.colorDistance(current[0], colors[i][0]) <= this.colorTolerance * 30) {
+                    group.push(colors.splice(i, 1)[0]);
+                }
+            }
+            
+            var mainColor = group.reduce((a, b) => a[1] > b[1] ? a : b)[0];
+            group.forEach(g => merged.set(g[0], mainColor));
+        }
+
+        var uniqueColors = [...new Set(merged.values())].sort((a, b) => 
+            this.getLuminance(a) - this.getLuminance(b)
+        );
+
+        if(uniqueColors.length > maxColors) {
+            uniqueColors = uniqueColors.slice(0, maxColors);
+            merged.forEach((value, key) => {
+                merged.set(key, uniqueColors.reduce((a, b) => 
+                    this.colorDistance(key, a) < this.colorDistance(key, b) ? a : b
+                ));
+            });
+            uniqueColors = [...new Set(merged.values())];
+        }
+
+        this.uniqueColorsArray = uniqueColors;
+        return [merged, new Map()];
+    },
+
+    colorDistance: function(hex1, hex2) {
+        var c1 = this.hexToRgb(hex1);
+        var c2 = this.hexToRgb(hex2);
+        return Math.sqrt(
+            Math.pow(c1.r - c2.r, 2) + 
+            Math.pow(c1.g - c2.g, 2) + 
+            Math.pow(c1.b - c2.b, 2)
+        );
+    },
+
+    getLuminance: function(hex) {
+        var rgb = this.hexToRgb(hex);
+        return 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b;
+    },
+
+    hexToRgb: function(hex) {
+        return {
+            r: parseInt(hex.substr(0, 2), 16),
+            g: parseInt(hex.substr(2, 2), 16),
+            b: parseInt(hex.substr(4, 2), 16)
+        };
+    },
+
+    drawColorSwatches: function(context, colors) {
+        context.canvas.width = this.previewContext.canvas.width;
+        context.canvas.height = 100;
+        context.fillStyle = '#FFFFFF';
+        context.fillRect(0, 0, context.canvas.width, context.canvas.height);
+        const swatchSize = Math.min(40, context.canvas.width / colors.length * 0.8);
+        const padding = swatchSize * 0.2;
+
+        colors.forEach((color, i) => {
+            const x = padding + i * (swatchSize + padding);
+            context.beginPath();
+            context.arc(x + swatchSize/2, 50, swatchSize/2, 0, Math.PI * 2);
+            context.fillStyle = '#' + color;
+            context.fill();
+            context.strokeStyle = "#000000";
+            context.stroke();
+            context.fillStyle = '#000000';
+            context.font = (swatchSize * 0.7) + "px Arial";
+            context.fillText(i + 1, x + swatchSize/2 - context.measureText(i + 1).width/2, 58);
+        });
+    },
+
+    rgbToHex: function(rgbArr) {
+        return rgbArr.map(v => v.toString(16).padStart(2, '0')).join('');
+    },
+
+    generatePDF: function(previewContext, colorSwatchContext, fileName) {
+        try {
+            // Setup PDF with proper dimensions
+            const margin = 20;
+            const pdfWidth = 595.28;  // A4 width in points
+            const pdfHeight = 841.89; // A4 height in points
+            const pdf = new jsPDF('portrait', 'pt', 'a4');
+            
+            // Calculate scaling to fit page
+            const scale = Math.min(
+                (pdfWidth - 2*margin) / previewContext.canvas.width,
+                (pdfHeight - 2*margin - 100) / previewContext.canvas.height
+            );
+            
+            // Add main image
+            const imageData = previewContext.canvas.toDataURL('image/png');
+            const scaledWidth = previewContext.canvas.width * scale;
+            const scaledHeight = previewContext.canvas.height * scale;
+            const x = (pdfWidth - scaledWidth) / 2;
+            const y = margin;
+            
+            pdf.addImage(imageData, 'PNG', x, y, scaledWidth, scaledHeight);
+            
+            // Add color swatches
+            const swatchData = colorSwatchContext.canvas.toDataURL('image/png');
+            const swatchScale = scaledWidth / colorSwatchContext.canvas.width;
+            const swatchHeight = colorSwatchContext.canvas.height * swatchScale;
+            
+            pdf.addImage(
+                swatchData, 
+                'PNG', 
+                x, 
+                y + scaledHeight + 20, 
+                scaledWidth, 
+                swatchHeight
+            );
+            
+            // Save PDF
+            pdf.save(fileName);
+            return true;
+        } catch(error) {
+            console.error('PDF generation failed:', error);
+            alert('Failed to generate PDF. Please try again.');
+            return false;
+        }
+    },
+
+    saveImage: function() {
+        try {
+            // Create temporary canvas for combined image
+            const tempCanvas = document.createElement('canvas');
+            const tempContext = tempCanvas.getContext('2d');
+            
+            // Set dimensions
+            tempCanvas.width = this.previewContext.canvas.width;
+            tempCanvas.height = this.previewContext.canvas.height + this.colorSwatchContext.canvas.height + 20;
+            
+            // Draw preview
+            tempContext.fillStyle = '#FFFFFF';
+            tempContext.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            tempContext.drawImage(this.previewContext.canvas, 0, 0);
+            
+            // Draw color swatches
+            tempContext.drawImage(
+                this.colorSwatchContext.canvas, 
+                0,
+                this.previewContext.canvas.height + 20
+            );
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.download = 'color-by-number_' + this.inputFileName + '.png';
+            link.href = tempCanvas.toDataURL('image/png').replace('image/png', 'image/octet-stream');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            return true;
+        } catch(error) {
+            console.error('Image export failed:', error);
+            alert('Failed to save image. Please try again.');
+            return false;
+        }
+    }
+};

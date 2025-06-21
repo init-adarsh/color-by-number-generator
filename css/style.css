@@ -239,3 +239,75 @@ input:checked + .toggle:before {
 .toggle.round:before {
   border-radius: 50%;
 }
+
+/* Palette button styles */
+.palette-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.palette-btn {
+    padding: 8px 12px;
+    border: 2px solid #1F497D;
+    background: #FFFFFF;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    color: #434343;
+}
+
+.palette-btn:hover {
+    background: #E8F1FF;
+    transform: translateY(-1px);
+}
+
+.palette-btn.active {
+    background: #1F497D;
+    color: #FFFFFF;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(31, 73, 125, 0.3);
+}
+
+.filter-toggle {
+    margin: 10px 0;
+}
+
+.filter-toggle .palette-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+}
+
+.filter-toggle .palette-btn.active {
+    background: #DC3545;
+    border-color: #DC3545;
+    color: #FFFFFF;
+}
+
+.custom-text-input {
+    margin: 10px 0;
+}
+
+.custom-text-input input {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #1F497D;
+    border-radius: 5px;
+    font-size: 14px;
+    color: #434343;
+    background: #FFFFFF;
+}
+
+.custom-text-input input:focus {
+    outline: none;
+    border-color: #2C5AA0;
+    box-shadow: 0 0 5px rgba(31, 73, 125, 0.3);
+}
+
+.custom-text-input input::placeholder {
+    color: #999999;
+    font-style: italic;
+}
